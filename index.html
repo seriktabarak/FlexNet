@@ -1,41 +1,202 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FlexNet Experiment</title>
 
-  <!-- jsPsych v7 core -->
+  <!-- jsPsych v7 -->
   <script src="https://unpkg.com/jspsych@7.3.0"></script>
   <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet" />
 
-  <!-- plugin -->
+  <!-- plugins -->
   <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.0"></script>
 </head>
 
 <body></body>
 
 <script>
-  // ✅ jsPsych v7 correct initialization
+  // =========================
+  // Step 1: Ethik & Datenschutz (GDPR)
+  // =========================
+
+  // --- Anonyme Versuchspersonen-ID ---
+  function randomId(len = 10) {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let out = "";
+    for (let i = 0; i < len; i++) out += chars[Math.floor(Math.random() * chars.length)];
+    return out;
+  }
+  const subject_id = "S_" + randomId(10);
+
   const jsPsych = initJsPsych({
     on_finish: function () {
-      jsPsych.data.get().localSave('csv', 'flexnet_demo_data.csv');
+      const fname = `FlexNet_${subject_id}.csv`;
+      jsPsych.data.get().localSave('csv', fname);
     }
+  });
+
+  // --- Globale, nicht-identifizierende Metadaten ---
+  jsPsych.data.addProperties({
+    subject_id: subject_id,
+    study: "FlexNet",
+    ts_start_iso: new Date().toISOString(),
+    language: navigator.language ?? null,
+    screen_w: window.screen?.width ?? null,
+    screen_h: window.screen?.height ?? null
   });
 
   const timeline = [];
 
+  // =========================
+  // Einwilligungserklärung (Consent)
+  // =========================
+  const consent_html = `
+    <div style="max-width: 900px; margin: 0 auto; text-align:left;">
+      <h2>Einwilligungserklärung zur Studienteilnahme</h2>
+
+      <p>Vielen Dank für Ihr Interesse an dieser wissenschaftlichen Studie.</p>
+
+      <h3>Ziel der Studie</h3>
+      <p>
+        In dieser Studie untersuchen wir kognitive Entscheidungs- und
+        Anpassungsprozesse mithilfe einer kurzen computergestützten Aufgabe.
+      </p>
+
+      <h3>Ablauf</h3>
+      <ul>
+        <li>Bearbeitung einer Online-Aufgabe am Computer oder mobilen Gerät</li>
+        <li>Erfassung Ihrer Entscheidungen und Reaktionszeiten</li>
+        <li>Gesamtdauer: ca. <b>3–10 Minuten</b></li>
+      </ul>
+
+      <h3>Freiwilligkeit und Abbruch</h3>
+      <p>
+        Ihre Teilnahme ist freiwillig. Sie können die Studie jederzeit und
+        ohne Angabe von Gründen abbrechen, ohne dass Ihnen daraus Nachteile entstehen.
+      </p>
+
+      <h3>Risiken und Belastungen</h3>
+      <p>
+        Die Teilnahme ist mit keinem bekannten Risiko verbunden. Es kann zu
+        leichter Ermüdung oder Langeweile kommen.
+      </p>
+
+      <h3>Datenschutz (DSGVO)</h3>
+      <ul>
+        <li>Es werden <b>keine personenbezogenen Daten</b> (z. B. Name, E-Mail, IP-Adresse) erhoben.</li>
+        <li>Ihre Daten werden ausschließlich unter einer zufällig generierten, anonymen Kennung gespeichert.</li>
+        <li>Die Daten werden am Ende der Studie als CSV-Datei lokal auf Ihrem Gerät gespeichert.</li>
+        <li>Eine automatische Übertragung an einen Server findet nicht statt.</li>
+      </ul>
+
+      <p>
+        Mit Klick auf „Ich stimme zu“ erklären Sie, dass Sie die oben genannten
+        Informationen gelesen und verstanden haben und freiwillig an der Studie teilnehmen.
+      </p>
+    </div>
+  `;
+
+  const consent_trial = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: consent_html,
+    choices: ["Ich stimme zu und beginne", "Ich stimme nicht zu (Abbruch)"],
+    data: {phase: "consent"},
+    on_finish: function(data){
+      data.consent = (data.response === 0) ? 1 : 0;
+    }
+  };
+
+  const exit_trial = {
+    type: jsPsychHtmlButtonResponse,
+    stimulus: `
+      <div style="max-width: 800px; margin:0 auto;">
+        <h2>Studie abgebrochen</h2>
+        <p>Vielen Dank für Ihr Interesse. Sie können dieses Fenster nun schließen.</p>
+      </div>
+    `,
+    choices: []
+  };
+
+  timeline.push(consent_trial);
+
+  timeline.push({
+    timeline: [exit_trial],
+    conditional_function: function(){
+      const d = jsPsych.data.get().filter({phase: "consent"}).last(1).values()[0];
+      return (d && d.consent === 0);
+    }
+  });
+
+  // =========================
+  // Minimale demografische Angaben (optional)
+  // =========================
+  const demo_trial = {
+    type: jsPsychSurveyMultiChoice,
+    preamble: `
+      <div style="max-width: 900px; margin:0 auto; text-align:left;">
+        <h2>Freiwillige Angaben</h2>
+        <p>Die folgenden Angaben dienen ausschließlich der wissenschaftlichen Auswertung.</p>
+        <p><b>Ihre anonyme Kennung:</b> ${subject_id}</p>
+      </div>
+    `,
+    questions: [
+      {
+        prompt: "Altersgruppe",
+        name: "age_group",
+        options: ["Unter 18", "18–24", "25–34", "35–44", "45–54", "55+", "Keine Angabe"],
+        required: true
+      },
+      {
+        prompt: "Geschlecht",
+        name: "gender",
+        options: ["Weiblich", "Männlich", "Divers", "Keine Angabe"],
+        required: true
+      },
+      {
+        prompt: "Händigkeit",
+        name: "handedness",
+        options: ["Rechtshändig", "Linkshändig", "Beidhändig", "Keine Angabe"],
+        required: true
+      }
+    ],
+    data: {phase: "demographics"}
+  };
+
+  timeline.push(demo_trial);
+
+  // =========================
+  // Platzhalter-Aufgabe
+  // =========================
   timeline.push({
     type: jsPsychHtmlButtonResponse,
-    stimulus: "<h2>FlexNet</h2><p>Online cognitive flexibility test (demo)</p>",
-    choices: ["Start"]
+    stimulus: `<h2>Aufgabe</h2><p>Die Aufgabe beginnt nun.</p>`,
+    choices: ["Weiter"],
+    data: {phase: "task_intro"}
   });
 
   timeline.push({
     type: jsPsychHtmlButtonResponse,
-    stimulus: "<p>Please choose one option:</p>",
+    stimulus: "<p>Bitte wählen Sie eine Option:</p>",
     choices: ["Option A", "Option B"],
-    data: { task: "demo_trial" }
+    data: {phase: "task", trial_type: "demo"}
+  });
+
+  // =========================
+  // Abschluss
+  // =========================
+  timeline.push({
+    type: jsPsychHtmlButtonResponse,
+    stimulus: `
+      <div style="max-width: 900px; margin:0 auto; text-align:left;">
+        <h2>Vielen Dank für Ihre Teilnahme</h2>
+        <p>Ihre Daten werden nun anonym gespeichert.</p>
+        <p><b>Ihre Kennung:</b> ${subject_id}</p>
+      </div>
+    `,
+    choices: ["Daten herunterladen und beenden"],
+    data: {phase: "debrief"}
   });
 
   jsPsych.run(timeline);
