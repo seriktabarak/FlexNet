@@ -1,25 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>FlexNet Experiment</title>
 
-  <!-- jsPsych core -->
+  <!-- jsPsych v7 core -->
   <script src="https://unpkg.com/jspsych@7.3.0"></script>
   <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet" />
 
-  <!-- jsPsych plugin -->
+  <!-- plugin -->
   <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.0"></script>
 </head>
 
 <body></body>
 
 <script>
+  // ✅ jsPsych v7 correct initialization
+  const jsPsych = initJsPsych({
+    on_finish: function () {
+      jsPsych.data.get().localSave('csv', 'flexnet_demo_data.csv');
+    }
+  });
+
   const timeline = [];
 
   timeline.push({
     type: jsPsychHtmlButtonResponse,
-    stimulus: "<h2>FlexNet</h2><p>Online cognitive flexibility test</p>",
+    stimulus: "<h2>FlexNet</h2><p>Online cognitive flexibility test (demo)</p>",
     choices: ["Start"]
   });
 
@@ -30,11 +38,6 @@
     data: { task: "demo_trial" }
   });
 
-  jsPsych.init({
-    timeline: timeline,
-    on_finish: function () {
-      jsPsych.data.get().localSave('csv', 'flexnet_demo_data.csv');
-    }
-  });
+  jsPsych.run(timeline);
 </script>
 </html>
