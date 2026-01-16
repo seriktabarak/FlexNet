@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>FlexNet Experiment</title>
+
+  <!-- jsPsych core -->
+  <script src="https://unpkg.com/jspsych@7.3.0"></script>
+  <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet" />
+
+  <!-- jsPsych plugin -->
+  <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.0"></script>
+</head>
+
+<body></body>
+
+<script>
+  const timeline = [];
+
+  timeline.push({
+    type: jsPsychHtmlButtonResponse,
+    stimulus: "<h2>FlexNet</h2><p>Online cognitive flexibility test</p>",
+    choices: ["Start"]
+  });
+
+  timeline.push({
+    type: jsPsychHtmlButtonResponse,
+    stimulus: "<p>Please choose one option:</p>",
+    choices: ["Option A", "Option B"],
+    data: { task: "demo_trial" }
+  });
+
+  jsPsych.init({
+    timeline: timeline,
+    on_finish: function () {
+      jsPsych.data.get().localSave('csv', 'flexnet_demo_data.csv');
+    }
+  });
+</script>
+</html>
