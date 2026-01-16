@@ -9,9 +9,13 @@
   <script src="https://unpkg.com/jspsych@7.3.0"></script>
   <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet" />
 
-  <!-- plugins -->
+  <!-- plugins (Step1 + Step2) -->
   <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.0"></script>
   <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.0"></script>
+
+  <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@1.1.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.0"></script>
 </head>
 
 <body></body>
@@ -167,20 +171,265 @@
   timeline.push(demo_trial);
 
   // =========================
-  // Platzhalter-Aufgabe
+  // Task selection (Rule vs Perceptual)
   // =========================
-  timeline.push({
+  const task_select = {
     type: jsPsychHtmlButtonResponse,
-    stimulus: `<h2>Aufgabe</h2><p>Die Aufgabe beginnt nun.</p>`,
-    choices: ["Weiter"],
-    data: {phase: "task_intro"}
+    stimulus: `
+      <div style="max-width: 900px; margin:0 auto; text-align:left;">
+        <h2>Aufgabe</h2>
+        <p>Bitte wählen Sie eine Aufgabe aus:</p>
+      </div>
+    `,
+    choices: ["Rule Shift", "Perceptual Shift"],
+    data: {phase: "task_select"},
+    on_finish: function(data){
+      const sel = (data.response === 0) ? "rule_shift" : "perceptual_shift";
+      jsPsych.data.addProperties({ task_selected: sel });
+      data.task_selected = sel;
+    }
+  };
+  timeline.push(task_select);
+
+  // =========================================================
+  // Step 2: Rule Shift (Go/NoGo) - integrated as a module
+  // =========================================================
+
+  // --- Assets (make sure these exist in your repo under /img/) ---
+  const ASSET = {
+    cue_up: "img/visual_cue_up.png",
+    cue_down: "img/visual_cue_down.png",
+    fb_win: "img/feedback_win.jpg",
+    fb_lose: "img/feedback_lose.jpg"
+  };
+
+  // Presentation trial schedule
+  // 1: cue_up + GO
+  // 2: cue_up + NOGO
+  // 3: cue_down + NOGO
+  // 4: cue_down + GO
+  const All_trials = [
+    [1,1,3,3,2,3,3,1,3,1, 3,1,3,1,4,3,1,3,3,1,
+     2,2,4,4,2,4,4,1,2,4, 4,4,2,2,2,4,3,2,2,4, 4,2,4,4,2],
+    [3,3,1,3,3,1,1,4,3,1, 1,1,3,1,1,3,2,3,1,1,
+     3,3,1,3,2,4,4,2,4,1,4,2,2,4,2,4,2,2,3,4,2,4,2,4,2]
+  ];
+
+  const ITI_duration = [
+    1000,1200,1400,1000,1000,1500,1000,1500,1100,1500,1000,1100,1400,1300,1000,1500,
+    1000,1200,1400,1000,1000,1500,1000,1500,1100,1500,1000,1100,1400,1300,1000,1500,
+    1000,1200,1400,1000,1000,1500,1000,1500,1100,1500,1000,1100,1400
+  ];
+
+  const DUR = { cue: 2000, response: 3000, feedback: 1000 };
+
+  // Map Presentation "button 2" -> keyboard key
+  const GO_KEYS = ["j"];     // press J on GO trials
+  const START_KEYS = ["t"];  // optional start trigger
+
+  function isGoTrial(trialType){ return (trialType === 1 || trialType === 4); }
+  function cueImage(trialType){ return (trialType === 1 || trialType === 2) ? ASSET.cue_up : ASSET.cue_down; }
+
+  const greenCrossHTML = `<div style="font-size:120px; color: rgb(0,100,0); line-height:1; user-select:none;">+</div>`;
+  const fixationHTML   = `<div style="font-size:120px; color: rgb(0,0,0); line-height:1; user-select:none;">+</div>`;
+
+  // preload (only if Rule Shift chosen)
+  const preload_rule = {
+    type: jsPsychPreload,
+    images: [ASSET.cue_up, ASSET.cue_down, ASSET.fb_win, ASSET.fb_lose]
+  };
+
+  const rule_start = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `
+      <div style="max-width:900px; margin:0 auto; text-align:left;">
+        <h2>Rule Shift: Go/NoGo</h2>
+        <p>In jedem Durchgang sehen Sie zuerst ein Hinweisbild (Cue), danach ein grünes „+“.</p>
+        <ul>
+          <li><b>Go</b>: Drücken Sie <b>J</b> so schnell wie möglich.</li>
+          <li><b>NoGo</b>: Drücken Sie <b>keine</b> Taste.</li>
+        </ul>
+        <p>Zum Start drücken Sie <b>T</b>.</p>
+      </div>
+    `,
+    choices: START_KEYS,
+    data: {phase: "rule_intro"}
+  };
+
+  // like your t0
+  let t0 = null;
+  const setT0 = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: "<p style='color:transparent;'>.</p>",
+    choices: "NO_KEYS",
+    trial_duration: 10,
+    data: {phase: "t0"},
+    on_start: function(){ if (t0 === null) t0 = performance.now(); }
+  };
+
+  function makeOneRuleTrial(blockIndex, trialIndexInBlock, trialType){
+    const go = isGoTrial(trialType);
+
+    const cue = {
+      type: jsPsychImageKeyboardResponse,
+      stimulus: cueImage(trialType),
+      choices: "NO_KEYS",
+      trial_duration: DUR.cue,
+      data: {
+        phase: "cue",
+        task: "rule_shift",
+        block: blockIndex + 1,
+        trial_in_block: trialIndexInBlock + 1,
+        trial_type: trialType,
+        go_trial: go ? 1 : 0
+      },
+      on_finish: function(data){
+        data.cue_onset_ms = performance.now();
+        data.cue_onset_rel_ms = (t0 === null) ? null : Math.round(data.cue_onset_ms - t0);
+      }
+    };
+
+    const resp = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: greenCrossHTML,
+      choices: GO_KEYS,
+      trial_duration: DUR.response,
+      response_ends_trial: false,
+      data: {
+        phase: "response",
+        task: "rule_shift",
+        block: blockIndex + 1,
+        trial_in_block: trialIndexInBlock + 1,
+        trial_type: trialType,
+        go_trial: go ? 1 : 0,
+        required_key: go ? GO_KEYS[0] : null
+      },
+      on_finish: function(data){
+        const pressed = (data.response !== null);
+        const rt = (data.rt === null) ? -1 : Math.round(data.rt);
+
+        // HIT/FA/MISS/CR
+        let resp_type = null;
+        let correct = null;
+
+        if (go && pressed) { resp_type = "HIT";  correct = 1; }
+        if (!go && pressed){ resp_type = "FA";   correct = 0; }
+        if (go && !pressed){ resp_type = "MISS"; correct = 0; }
+        if (!go && !pressed){resp_type = "CR";   correct = 1; }
+
+        data.pressed = pressed ? 1 : 0;
+        data.rt_ms = rt;
+        data.resp_type = resp_type;
+        data.correct = correct;
+        data.late = (go && !pressed) ? 1 : 0;
+
+        data.response_onset_ms = performance.now();
+        data.response_onset_rel_ms = (t0 === null) ? null : Math.round(data.response_onset_ms - t0);
+
+        // reversal flag exactly like your script
+        let rev = 0;
+        if (blockIndex === 0 && (trialIndexInBlock + 1) > 20) rev = 1;
+        if (blockIndex === 1 && (trialIndexInBlock + 1) > 24) rev = 1;
+        data.reversal = rev;
+      }
+    };
+
+    const feedback = {
+      type: jsPsychHtmlKeyboardResponse,
+      choices: "NO_KEYS",
+      trial_duration: DUR.feedback,
+      data: {
+        phase: "feedback",
+        task: "rule_shift",
+        block: blockIndex + 1,
+        trial_in_block: trialIndexInBlock + 1,
+        trial_type: trialType
+      },
+      stimulus: function(){
+        const last = jsPsych.data.get().filter({phase:"response", task:"rule_shift"}).last(1).values()[0];
+        const win = (last.correct === 1);
+        const late = (last.late === 1);
+
+        const img = win ? ASSET.fb_win : ASSET.fb_lose;
+        const msg = late ? "Zu spät!" : (win ? "Du gewinnst!" : "Du verlierst!");
+        const color = (win && !late) ? "black" : "red";
+
+        return `
+          <div style="text-align:center;">
+            <img src="${img}" style="max-width: 420px; height:auto; display:block; margin:0 auto;" />
+            <div style="margin-top:14px; font-size:60px; color:${color}; font-weight:600;">
+              ${msg}
+            </div>
+          </div>
+        `;
+      },
+      on_finish: function(data){
+        data.outcome_onset_ms = performance.now();
+        data.outcome_onset_rel_ms = (t0 === null) ? null : Math.round(data.outcome_onset_ms - t0);
+
+        const last = jsPsych.data.get().filter({phase:"response", task:"rule_shift"}).last(1).values()[0];
+        data.correct = last.correct;
+        data.resp_type = last.resp_type;
+        data.rt_ms = last.rt_ms;
+        data.reversal = last.reversal;
+      }
+    };
+
+    const iti = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: fixationHTML,
+      choices: "NO_KEYS",
+      trial_duration: ITI_duration[trialIndexInBlock],
+      data: {
+        phase: "ITI",
+        task: "rule_shift",
+        block: blockIndex + 1,
+        trial_in_block: trialIndexInBlock + 1,
+        iti_ms: ITI_duration[trialIndexInBlock]
+      }
+    };
+
+    return [cue, resp, feedback, iti];
+  }
+
+  // Build rule timeline once (we will conditionally include it)
+  const timeline_rule = [];
+  timeline_rule.push(preload_rule, rule_start, setT0);
+
+  for (let b = 0; b < All_trials.length; b++){
+    for (let t = 0; t < All_trials[b].length; t++){
+      timeline_rule.push(...makeOneRuleTrial(b, t, All_trials[b][t]));
+    }
+  }
+
+  // Only run Rule Shift block if selected
+  timeline.push({
+    timeline: timeline_rule,
+    conditional_function: function(){
+      const sel = jsPsych.data.get().filter({phase:"task_select"}).last(1).values()[0];
+      return sel && sel.task_selected === "rule_shift";
+    }
   });
 
-  timeline.push({
+  // Perceptual Shift placeholder (for now)
+  const perceptual_placeholder = {
     type: jsPsychHtmlButtonResponse,
-    stimulus: "<p>Bitte wählen Sie eine Option:</p>",
-    choices: ["Rule Shift", "Perceptual Shift"],
-    data: {phase: "task", trial_type: "demo"}
+    stimulus: `
+      <div style="max-width: 900px; margin:0 auto; text-align:left;">
+        <h2>Perceptual Shift</h2>
+        <p>Dieses Modul ist noch nicht implementiert. Bitte wählen Sie aktuell „Rule Shift“.</p>
+      </div>
+    `,
+    choices: ["Weiter"],
+    data: {phase: "perceptual_placeholder"}
+  };
+
+  timeline.push({
+    timeline: [perceptual_placeholder],
+    conditional_function: function(){
+      const sel = jsPsych.data.get().filter({phase:"task_select"}).last(1).values()[0];
+      return sel && sel.task_selected === "perceptual_shift";
+    }
   });
 
   // =========================
