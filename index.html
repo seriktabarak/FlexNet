@@ -22,6 +22,31 @@
 
 <script>
   // =========================
+  // ✅ 新增：把数据发回后台（不下载到用户本地）
+  // =========================
+  // 1) 改成你的后端域名（同域可留空 "")
+  const BACKEND_URL = "https://YOUR_BACKEND_DOMAIN"; // 例如：https://xxx.onrender.com
+  // 2) 改成你后端一致的 token（或你后端改为从环境变量读取）
+  const AUTH_TOKEN = "FLEXNET_SECRET_2025";
+
+  async function sendToBackend(payloadObj) {
+    const res = await fetch(`${BACKEND_URL}/api/upload`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${AUTH_TOKEN}`
+      },
+      body: JSON.stringify(payloadObj)
+    });
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      throw new Error(`Upload failed: ${res.status} ${txt}`);
+    }
+    return await res.json().catch(() => ({ status: "ok" }));
+  }
+
+  // =========================
   // Step 1: Ethik & Datenschutz (GDPR)
   // =========================
 
@@ -36,8 +61,14 @@
 
   const jsPsych = initJsPsych({
     on_finish: function () {
-      const fname = `FlexNet_${subject_id}.csv`;
-      jsPsych.data.get().localSave('csv', fname);
+      // =========================
+      // ✅ 改动 1：取消自动本地下载
+      // 原来是：
+      // const fname = `FlexNet_${subject_id}.csv`;
+      // jsPsych.data.get().localSave('csv', fname);
+      // =========================
+
+      // 这里留空即可（最终上传在 debrief 按钮里做）
     }
   });
 
@@ -435,6 +466,8 @@
   // =========================
   // Abschluss
   // =========================
+
+  // ✅ 改动 2：最后按钮不再下载，而是上传到后台
   timeline.push({
     type: jsPsychHtmlButtonResponse,
     stimulus: `
@@ -444,8 +477,35 @@
         <p><b>Ihre Kennung:</b> ${subject_id}</p>
       </div>
     `,
-    choices: ["Daten herunterladen und beenden"],
-    data: {phase: "debrief"}
+    choices: ["Beenden"],
+    data: {phase: "debrief"},
+    on_finish: async function(data){
+      // 组装要上传的内容：既给 CSV（方便你后台存），也给 JSON（方便你后台分析）
+      const csvStr  = jsPsych.data.get().csv();
+      const jsonArr = jsPsych.data.get().values();
+
+      const payloadObj = {
+        subjectId: subject_id,
+        timestamp: Date.now(),
+        ts_end_iso: new Date().toISOString(),
+        study: "FlexNet",
+        task_selected: jsPsych.data.get().filter({phase:"task_select"}).last(1).values()?.[0]?.task_selected ?? null,
+        payload_csv: csvStr,
+        payload_json: jsonArr
+      };
+
+      try {
+        await sendToBackend(payloadObj);
+        data.upload_ok = 1;
+      } catch (e) {
+        console.error(e);
+        data.upload_ok = 0;
+        data.upload_error = String(e?.message ?? e);
+
+        // 如果你希望“上传失败就提示用户不要关页面”，可以用 alert：
+        alert("Upload fehlgeschlagen. Bitte lassen Sie dieses Fenster offen und versuchen Sie es erneut (oder kontaktieren Sie das Studienteam).");
+      }
+    }
   });
 
   jsPsych.run(timeline);
