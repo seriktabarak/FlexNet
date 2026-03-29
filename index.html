@@ -9,22 +9,302 @@
   <script src="https://unpkg.com/jspsych@7.3.0"></script>
   <link href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css" rel="stylesheet" />
 
-  <!-- plugins (Step1 + Step2) -->
+  <!-- plugins -->
   <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.0"></script>
   <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@1.1.0"></script>
-
   <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.0"></script>
   <script src="https://unpkg.com/@jspsych/plugin-image-keyboard-response@1.1.0"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.0"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-audio-keyboard-response@1.1.0"></script>
+
+  <style>
+    /* ═══════════════════════════════════════════
+       Global Dark Theme
+       ═══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0; padding: 0;
+      background: #0a0a0f;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    /* jsPsych overrides */
+    #jspsych-content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .jspsych-btn {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #e0e0e0;
+      border: 1px solid #2a2a4a;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin: 6px;
+    }
+    .jspsych-btn:hover {
+      background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
+      border-color: #4a4a7a;
+      box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
+    }
+
+    h1, h2, h3 {
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Consent / info pages */
+    .fn-container {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 40px;
+      background: rgba(20, 20, 35, 0.9);
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    .fn-container h2 {
+      margin-top: 0;
+      font-size: 24px;
+      border-bottom: 2px solid rgba(79, 70, 229, 0.4);
+      padding-bottom: 12px;
+    }
+    .fn-container h3 {
+      font-size: 18px;
+      color: #a0a0d0;
+      margin-top: 24px;
+    }
+    .fn-container p, .fn-container li {
+      color: #c0c0d0;
+      line-height: 1.7;
+    }
+    .fn-container ul {
+      padding-left: 20px;
+    }
+
+    /* Task selection cards */
+    .task-cards {
+      display: flex;
+      gap: 24px;
+      margin: 30px 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .task-card {
+      flex: 1;
+      min-width: 250px;
+      max-width: 360px;
+      padding: 30px;
+      background: rgba(25, 25, 45, 0.95);
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.08);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+    .task-card:hover {
+      border-color: rgba(79, 70, 229, 0.5);
+      box-shadow: 0 0 30px rgba(79, 70, 229, 0.12);
+      transform: translateY(-4px);
+    }
+    .task-card .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .task-card h3 {
+      color: #ffffff;
+      margin: 0 0 10px 0;
+      font-size: 20px;
+    }
+    .task-card p {
+      color: #8888aa;
+      font-size: 14px;
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    /* ═══════════════════════════════════════════
+       Experiment Trial Styling
+       ═══════════════════════════════════════════ */
+    #jspsych-image-keyboard-response-stimulus,
+    #jspsych-html-keyboard-response-stimulus {
+      margin-top: 20px;
+    }
+
+    /* Fixation cross */
+    .fn-fixation {
+      font-size: 80px;
+      color: #2a2a3a;
+      line-height: 1;
+      user-select: none;
+    }
+
+    /* GO signal cross (green) */
+    .fn-go-signal {
+      font-size: 100px;
+      color: #00c853;
+      line-height: 1;
+      user-select: none;
+      animation: pulse-green 0.6s ease-in-out infinite alternate;
+    }
+    @keyframes pulse-green {
+      from { text-shadow: 0 0 10px rgba(0,200,83,0.3); }
+      to   { text-shadow: 0 0 30px rgba(0,200,83,0.7); }
+    }
+
+    /* Cue display area */
+    .fn-cue-area {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 300px;
+      width: 100%;
+    }
+
+    /* SVG Cue (coin with arrows) */
+    .fn-coin-container {
+      position: relative;
+      width: 140px;
+      height: 140px;
+    }
+    .fn-coin {
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #f0d060, #c8a020, #a07810);
+      border: 3px solid #d4a820;
+      box-shadow: 0 0 20px rgba(200,160,32,0.2), inset 0 2px 4px rgba(255,255,255,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px auto;
+    }
+    .fn-coin::after {
+      content: '';
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.15);
+    }
+
+    /* Arrows on coin */
+    .fn-arrow {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+    }
+    .fn-arrow-up {
+      top: -30px;
+      border-bottom: 28px solid #e0e0e0;
+      filter: drop-shadow(0 -2px 4px rgba(255,255,255,0.2));
+    }
+    .fn-arrow-down {
+      bottom: -30px;
+      border-top: 28px solid #e0e0e0;
+      filter: drop-shadow(0 2px 4px rgba(255,255,255,0.2));
+    }
+
+    /* Outcome feedback */
+    .fn-outcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+    }
+    .fn-outcome-img {
+      max-width: 200px;
+      max-height: 200px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      object-fit: contain;
+    }
+    .fn-outcome-text {
+      font-size: 32px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .fn-outcome-win { color: #4caf50; }
+    .fn-outcome-lose { color: #ef5350; }
+    .fn-outcome-late { color: #ff9800; }
+
+    /* Survey plugin overrides for dark theme */
+    .jspsych-survey-multi-choice {
+      background: transparent;
+      color: #e0e0e0;
+    }
+    .jspsych-survey-multi-choice-question {
+      margin-bottom: 20px;
+    }
+    .jspsych-survey-multi-choice-text {
+      color: #c0c0d0 !important;
+    }
+    .jspsych-survey-multi-choice-option {
+      display: block;
+      padding: 10px 16px;
+      margin: 6px 0;
+      background: rgba(25,25,45,0.8);
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .jspsych-survey-multi-choice-option:hover {
+      background: rgba(40,40,70,0.9);
+    }
+    .jspsych-survey-multi-choice-option input[type="radio"] {
+      margin-right: 10px;
+      accent-color: #4f46e5;
+    }
+    .jspsych-survey-multi-choice-option label {
+      color: #c0c0d0 !important;
+      cursor: pointer;
+    }
+
+    /* Instructions page */
+    .fn-instructions {
+      text-align: left;
+    }
+    .fn-instructions ul {
+      padding-left: 24px;
+    }
+    .fn-instructions li {
+      margin-bottom: 8px;
+      color: #c0c0d0;
+      line-height: 1.6;
+    }
+    .fn-key {
+      display: inline-block;
+      background: rgba(79,70,229,0.2);
+      border: 1px solid rgba(79,70,229,0.4);
+      border-radius: 4px;
+      padding: 2px 8px;
+      font-family: monospace;
+      font-size: 14px;
+      color: #a0a0ff;
+    }
+  </style>
 </head>
 
 <body></body>
 
 <script>
-  // =========================
-  // Backend config — 留空 "" 即同域部署（推荐）
-  // =========================
-  const BACKEND_URL = "";  // 同域部署留空；跨域则填 "https://xxx.onrender.com"
+  // ═══════════════════════════════════════════
+  // Backend config
+  // ═══════════════════════════════════════════
+  const BACKEND_URL = "";
   const AUTH_TOKEN = "FLEXNET_SECRET_2025";
 
   async function sendToBackend(payloadObj, retries = 3) {
@@ -38,24 +318,19 @@
           },
           body: JSON.stringify(payloadObj)
         });
-        if (!res.ok) {
-          const txt = await res.text().catch(() => "");
-          throw new Error(`${res.status} ${txt}`);
-        }
+        if (!res.ok) throw new Error(`${res.status}`);
         return await res.json().catch(() => ({ status: "ok" }));
       } catch (e) {
         console.warn(`Upload attempt ${attempt}/${retries} failed:`, e);
         if (attempt === retries) throw e;
-        await new Promise(r => setTimeout(r, 2000 * attempt)); // backoff
+        await new Promise(r => setTimeout(r, 2000 * attempt));
       }
     }
   }
 
-  // =========================
-  // Step 1: Ethik & Datenschutz (GDPR)
-  // =========================
-
-  // --- Anonyme Versuchspersonen-ID ---
+  // ═══════════════════════════════════════════
+  // Subject ID & jsPsych init
+  // ═══════════════════════════════════════════
   function randomId(len = 10) {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     let out = "";
@@ -65,19 +340,9 @@
   const subject_id = "S_" + randomId(10);
 
   const jsPsych = initJsPsych({
-    on_finish: function () {
-      // =========================
-      // ✅ 改动 1：取消自动本地下载
-      // 原来是：
-      // const fname = `FlexNet_${subject_id}.csv`;
-      // jsPsych.data.get().localSave('csv', fname);
-      // =========================
-
-      // 这里留空即可（最终上传在 debrief 按钮里做）
-    }
+    on_finish: function() { /* upload handled in debrief */ }
   });
 
-  // --- Globale, nicht-identifizierende Metadaten ---
   jsPsych.data.addProperties({
     subject_id: subject_id,
     study: "FlexNet",
@@ -89,20 +354,28 @@
 
   const timeline = [];
 
-  // =========================
-  // Einwilligungserklärung (Consent)
-  // =========================
-  const consent_html = `
-    <div style="max-width: 900px; margin: 0 auto; text-align:left;">
-      <h2>Einwilligungserklärung zur Studienteilnahme</h2>
+  // ═══════════════════════════════════════════
+  // Difficulty settings
+  // ═══════════════════════════════════════════
+  // Easy:   10/90 (90% congruent)
+  // Medium: 20/80 (80% congruent)
+  // Hard:   30/70 (70% congruent)
+  const DIFFICULTY = {
+    easy:   { congruent: 90, incongruent: 10, label: "Einfach", labelEn: "Easy" },
+    medium: { congruent: 80, incongruent: 20, label: "Mittel",  labelEn: "Medium" },
+    hard:   { congruent: 70, incongruent: 30, label: "Schwer",  labelEn: "Hard" }
+  };
 
+  // ═══════════════════════════════════════════
+  // STEP 1: Consent
+  // ═══════════════════════════════════════════
+  const consent_html = `
+    <div class="fn-container">
+      <h2>Einwilligungserklärung zur Studienteilnahme</h2>
       <p>Vielen Dank für Ihr Interesse an dieser wissenschaftlichen Studie.</p>
 
       <h3>Ziel der Studie</h3>
-      <p>
-        In dieser Studie untersuchen wir kognitive Entscheidungs- und
-        Anpassungsprozesse mithilfe einer kurzen computergestützten Aufgabe.
-      </p>
+      <p>In dieser Studie untersuchen wir kognitive Entscheidungs- und Anpassungsprozesse mithilfe einer kurzen computergestützten Aufgabe.</p>
 
       <h3>Ablauf</h3>
       <ul>
@@ -112,16 +385,10 @@
       </ul>
 
       <h3>Freiwilligkeit und Abbruch</h3>
-      <p>
-        Ihre Teilnahme ist freiwillig. Sie können die Studie jederzeit und
-        ohne Angabe von Gründen abbrechen, ohne dass Ihnen daraus Nachteile entstehen.
-      </p>
+      <p>Ihre Teilnahme ist freiwillig. Sie können die Studie jederzeit und ohne Angabe von Gründen abbrechen, ohne dass Ihnen daraus Nachteile entstehen.</p>
 
       <h3>Risiken und Belastungen</h3>
-      <p>
-        Die Teilnahme ist mit keinem bekannten Risiko verbunden. Es kann zu
-        leichter Ermüdung oder Langeweile kommen.
-      </p>
+      <p>Die Teilnahme ist mit keinem bekannten Risiko verbunden. Es kann zu leichter Ermüdung oder Langeweile kommen.</p>
 
       <h3>Datenschutz (DSGVO)</h3>
       <ul>
@@ -132,10 +399,7 @@
         <li>Nach Abschluss der Studie werden die Daten anonymisiert archiviert und nach Ablauf der Aufbewahrungsfrist gelöscht.</li>
       </ul>
 
-      <p>
-        Mit Klick auf „Ich stimme zu" erklären Sie, dass Sie die oben genannten
-        Informationen gelesen und verstanden haben und freiwillig an der Studie teilnehmen.
-      </p>
+      <p>Mit Klick auf „Ich stimme zu" erklären Sie, dass Sie die oben genannten Informationen gelesen und verstanden haben und freiwillig an der Studie teilnehmen.</p>
     </div>
   `;
 
@@ -143,8 +407,8 @@
     type: jsPsychHtmlButtonResponse,
     stimulus: consent_html,
     choices: ["Ich stimme zu und beginne", "Ich stimme nicht zu (Abbruch)"],
-    data: {phase: "consent"},
-    on_finish: function(data){
+    data: { phase: "consent" },
+    on_finish: function(data) {
       data.consent = (data.response === 0) ? 1 : 0;
     }
   };
@@ -152,7 +416,7 @@
   const exit_trial = {
     type: jsPsychHtmlButtonResponse,
     stimulus: `
-      <div style="max-width: 800px; margin:0 auto;">
+      <div class="fn-container">
         <h2>Studie abgebrochen</h2>
         <p>Vielen Dank für Ihr Interesse. Sie können dieses Fenster nun schließen.</p>
       </div>
@@ -161,22 +425,21 @@
   };
 
   timeline.push(consent_trial);
-
   timeline.push({
     timeline: [exit_trial],
-    conditional_function: function(){
-      const d = jsPsych.data.get().filter({phase: "consent"}).last(1).values()[0];
+    conditional_function: function() {
+      const d = jsPsych.data.get().filter({ phase: "consent" }).last(1).values()[0];
       return (d && d.consent === 0);
     }
   });
 
-  // =========================
-  // Minimale demografische Angaben (optional)
-  // =========================
+  // ═══════════════════════════════════════════
+  // STEP 2: Demographics
+  // ═══════════════════════════════════════════
   const demo_trial = {
     type: jsPsychSurveyMultiChoice,
     preamble: `
-      <div style="max-width: 900px; margin:0 auto; text-align:left;">
+      <div class="fn-container">
         <h2>Freiwillige Angaben</h2>
         <p>Die folgenden Angaben dienen ausschließlich der wissenschaftlichen Auswertung.</p>
         <p><b>Ihre anonyme Kennung:</b> ${subject_id}</p>
@@ -186,7 +449,7 @@
       {
         prompt: "Altersgruppe",
         name: "age_group",
-        options: ["Unter 18", "18–24", "25–34", "35–44", "45–54", "55+", "Keine Angabe"],
+        options: ["Unter 40", "40–60", "Über 60", "Keine Angabe"],
         required: true
       },
       {
@@ -202,25 +465,51 @@
         required: true
       }
     ],
-    data: {phase: "demographics"}
+    data: { phase: "demographics" },
+    on_finish: function(data) {
+      const ageGroup = data.response?.age_group;
+      let difficulty = "medium"; // default
+      if (ageGroup === "Unter 40") difficulty = "hard";
+      else if (ageGroup === "40–60") difficulty = "medium";
+      else if (ageGroup === "Über 60") difficulty = "easy";
+      jsPsych.data.addProperties({
+        age_group: ageGroup,
+        gender: data.response?.gender,
+        handedness: data.response?.handedness,
+        difficulty: difficulty
+      });
+    }
   };
 
   timeline.push(demo_trial);
 
-  // =========================
-  // Task selection (Rule vs Perceptual)
-  // =========================
+  // ═══════════════════════════════════════════
+  // STEP 3: Task Selection
+  // ═══════════════════════════════════════════
   const task_select = {
     type: jsPsychHtmlButtonResponse,
     stimulus: `
-      <div style="max-width: 900px; margin:0 auto; text-align:left;">
-        <h2>Aufgabe</h2>
-        <p>Bitte wählen Sie eine Aufgabe aus:</p>
+      <div class="fn-container" style="text-align:center;">
+        <h2 style="border-bottom:none;">Aufgabe wählen</h2>
+        <p style="color:#8888aa;">Bitte wählen Sie eine Aufgabe:</p>
+        <div class="task-cards">
+          <div class="task-card" id="card-rule" onclick="jsPsych.pluginAPI.pressKey(49)">
+            <div class="icon">🎯</div>
+            <h3>Rule Shift</h3>
+            <p>Visuelle Hinweise + visuelle Rückmeldung. Reagieren Sie auf Regeln.</p>
+          </div>
+          <div class="task-card" id="card-perceptual" onclick="jsPsych.pluginAPI.pressKey(50)">
+            <div class="icon">🔊</div>
+            <h3>Perceptual Shift</h3>
+            <p>Visuelle Hinweise + akustische Rückmeldung. Hören Sie aufmerksam.</p>
+          </div>
+        </div>
+        <p style="color:#666;font-size:13px;margin-top:16px;">Drücken Sie <span class="fn-key">1</span> für Rule Shift oder <span class="fn-key">2</span> für Perceptual Shift</p>
       </div>
     `,
     choices: ["Rule Shift", "Perceptual Shift"],
-    data: {phase: "task_select"},
-    on_finish: function(data){
+    data: { phase: "task_select" },
+    on_finish: function(data) {
       const sel = (data.response === 0) ? "rule_shift" : "perceptual_shift";
       jsPsych.data.addProperties({ task_selected: sel });
       data.task_selected = sel;
@@ -228,11 +517,69 @@
   };
   timeline.push(task_select);
 
-  // =========================================================
-  // Step 2: Rule Shift (Go/NoGo) - integrated as a module
-  // =========================================================
+  // ═══════════════════════════════════════════
+  // Helper: Difficulty-aware trial list generator
+  // ═══════════════════════════════════════════
+  // Trial types:
+  //   1 = cue_up + GO     (congruent)
+  //   2 = cue_up + NOGO   (incongruent)
+  //   3 = cue_down + NOGO (congruent)
+  //   4 = cue_down + GO   (incongruent)
+  //
+  // Congruent: 1, 3
+  // Incongruent: 2, 4
+  function generateTrialList(nTrialsPreReversal, nTrialsPostReversal, difficulty) {
+    const diff = DIFFICULTY[difficulty] || DIFFICULTY.medium;
+    const congruentPct = diff.congruent;
+    const incongruentPct = diff.incongruent;
 
-  // --- Assets (make sure these exist in your repo under /img/) ---
+    function makeBlock(nTrials) {
+      const trials = [];
+      const nCongruent = Math.round(nTrials * congruentPct / 100);
+      const nIncongruent = nTrials - nCongruent;
+
+      // Congruent trials: 1 (cue_up GO) and 3 (cue_down NOGO)
+      for (let i = 0; i < nCongruent; i++) {
+        trials.push(Math.random() < 0.5 ? 1 : 3);
+      }
+      // Incongruent trials: 2 (cue_up NOGO) and 4 (cue_down GO)
+      for (let i = 0; i < nIncongruent; i++) {
+        trials.push(Math.random() < 0.5 ? 2 : 4);
+      }
+      // Shuffle (Fisher-Yates)
+      for (let i = trials.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [trials[i], trials[j]] = [trials[j], trials[i]];
+      }
+      return trials;
+    }
+
+    const pre  = makeBlock(nTrialsPreReversal);
+    const post = makeBlock(nTrialsPostReversal);
+    return [pre, post];
+  }
+
+  // ═══════════════════════════════════════════
+  // Shared parameters
+  // ═══════════════════════════════════════════
+  const DUR = { cue: 2000, response: 3000, feedback: 1500 };
+  const GO_KEYS = ["j"];
+  const START_KEYS = ["t"];
+
+  function isGoTrial(trialType) { return (trialType === 1 || trialType === 4); }
+
+  // Generate ITI durations: jittered 1000-1800ms
+  function generateITI(nTrials) {
+    const iti = [];
+    for (let i = 0; i < nTrials; i++) {
+      iti.push(1000 + Math.floor(Math.random() * 801)); // 1000 to 1800
+    }
+    return iti;
+  }
+
+  // ═══════════════════════════════════════════
+  // RULE SHIFT TASK
+  // ═══════════════════════════════════════════
   const ASSET = {
     cue_up: "img/visual_cue_up.png",
     cue_down: "img/visual_cue_down.png",
@@ -240,37 +587,10 @@
     fb_lose: "img/feedback_lose.jpg"
   };
 
-  // Presentation trial schedule
-  // 1: cue_up + GO
-  // 2: cue_up + NOGO
-  // 3: cue_down + NOGO
-  // 4: cue_down + GO
-  const All_trials = [
-    [1,1,3,3,2,3,3,1,3,1, 3,1,3,1,4,3,1,3,3,1,
-     2,2,4,4,2,4,4,1,2,4, 4,4,2,2,2,4,3,2,2,4, 4,2,4,4,2],
-    [3,3,1,3,3,1,1,4,3,1, 1,1,3,1,1,3,2,3,1,1,
-     3,3,1,3,2,4,4,2,4,1,4,2,2,4,2,4,2,2,3,4,2,4,2,4,2]
-  ];
+  function cueImage(trialType) {
+    return (trialType === 1 || trialType === 2) ? ASSET.cue_up : ASSET.cue_down;
+  }
 
-  const ITI_duration = [
-    1000,1200,1400,1000,1000,1500,1000,1500,1100,1500,1000,1100,1400,1300,1000,1500,
-    1000,1200,1400,1000,1000,1500,1000,1500,1100,1500,1000,1100,1400,1300,1000,1500,
-    1000,1200,1400,1000,1000,1500,1000,1500,1100,1500,1000,1100,1400
-  ];
-
-  const DUR = { cue: 2000, response: 3000, feedback: 1000 };
-
-  // Map Presentation "button 2" -> keyboard key
-  const GO_KEYS = ["j"];     // press J on GO trials
-  const START_KEYS = ["t"];  // optional start trigger
-
-  function isGoTrial(trialType){ return (trialType === 1 || trialType === 4); }
-  function cueImage(trialType){ return (trialType === 1 || trialType === 2) ? ASSET.cue_up : ASSET.cue_down; }
-
-  const greenCrossHTML = `<div style="font-size:120px; color: rgb(0,100,0); line-height:1; user-select:none;">+</div>`;
-  const fixationHTML   = `<div style="font-size:120px; color: rgb(0,0,0); line-height:1; user-select:none;">+</div>`;
-
-  // preload (only if Rule Shift chosen)
   const preload_rule = {
     type: jsPsychPreload,
     images: [ASSET.cue_up, ASSET.cue_down, ASSET.fb_win, ASSET.fb_lose]
@@ -279,33 +599,35 @@
   const rule_start = {
     type: jsPsychHtmlKeyboardResponse,
     stimulus: `
-      <div style="max-width:900px; margin:0 auto; text-align:left;">
-        <h2>Rule Shift: Go/NoGo</h2>
+      <div class="fn-container fn-instructions">
+        <h2>Rule Shift: Go / NoGo</h2>
         <p>In jedem Durchgang sehen Sie zuerst ein Hinweisbild (Cue), danach ein grünes „+".</p>
         <ul>
-          <li><b>Go</b>: Drücken Sie <b>J</b> so schnell wie möglich.</li>
+          <li><b>Go</b>: Drücken Sie <span class="fn-key">J</span> so schnell wie möglich.</li>
           <li><b>NoGo</b>: Drücken Sie <b>keine</b> Taste.</li>
+          <li>Nach Ihrer Entscheidung sehen Sie, ob Sie richtig oder falsch waren.</li>
         </ul>
-        <p>Zum Start drücken Sie <b>T</b>.</p>
+        <p style="margin-top:20px;">Beachten Sie: Die Regeln können sich中途 ändern!</p>
+        <p style="margin-top:20px;">Zum Start drücken Sie <span class="fn-key">T</span>.</p>
       </div>
     `,
     choices: START_KEYS,
-    data: {phase: "rule_intro"}
+    data: { phase: "rule_intro" }
   };
 
-  // like your t0
   let t0 = null;
   const setT0 = {
     type: jsPsychHtmlKeyboardResponse,
-    stimulus: "<p style='color:transparent;'>.</p>",
+    stimulus: `<div class="fn-fixation">+</div>`,
     choices: "NO_KEYS",
     trial_duration: 10,
-    data: {phase: "t0"},
-    on_start: function(){ if (t0 === null) t0 = performance.now(); }
+    data: { phase: "t0" },
+    on_start: function() { if (t0 === null) t0 = performance.now(); }
   };
 
-  function makeOneRuleTrial(blockIndex, trialIndexInBlock, trialType){
+  function makeRuleTrialHTML(blockIndex, trialIndexInBlock, trialType, totalPreReversal) {
     const go = isGoTrial(trialType);
+    const isPostReversal = trialIndexInBlock >= totalPreReversal;
 
     const cue = {
       type: jsPsychImageKeyboardResponse,
@@ -318,9 +640,10 @@
         block: blockIndex + 1,
         trial_in_block: trialIndexInBlock + 1,
         trial_type: trialType,
-        go_trial: go ? 1 : 0
+        go_trial: go ? 1 : 0,
+        reversal: isPostReversal ? 1 : 0
       },
-      on_finish: function(data){
+      on_finish: function(data) {
         data.cue_onset_ms = performance.now();
         data.cue_onset_rel_ms = (t0 === null) ? null : Math.round(data.cue_onset_ms - t0);
       }
@@ -328,7 +651,7 @@
 
     const resp = {
       type: jsPsychHtmlKeyboardResponse,
-      stimulus: greenCrossHTML,
+      stimulus: `<div class="fn-go-signal">+</div>`,
       choices: GO_KEYS,
       trial_duration: DUR.response,
       response_ends_trial: false,
@@ -339,35 +662,26 @@
         trial_in_block: trialIndexInBlock + 1,
         trial_type: trialType,
         go_trial: go ? 1 : 0,
+        reversal: isPostReversal ? 1 : 0,
         required_key: go ? GO_KEYS[0] : null
       },
-      on_finish: function(data){
+      on_finish: function(data) {
         const pressed = (data.response !== null);
         const rt = (data.rt === null) ? -1 : Math.round(data.rt);
-
-        // HIT/FA/MISS/CR
         let resp_type = null;
         let correct = null;
-
-        if (go && pressed) { resp_type = "HIT";  correct = 1; }
-        if (!go && pressed){ resp_type = "FA";   correct = 0; }
-        if (go && !pressed){ resp_type = "MISS"; correct = 0; }
-        if (!go && !pressed){resp_type = "CR";   correct = 1; }
+        if (go && pressed)      { resp_type = "HIT";  correct = 1; }
+        if (!go && pressed)     { resp_type = "FA";   correct = 0; }
+        if (go && !pressed)     { resp_type = "MISS"; correct = 0; }
+        if (!go && !pressed)    { resp_type = "CR";   correct = 1; }
 
         data.pressed = pressed ? 1 : 0;
         data.rt_ms = rt;
         data.resp_type = resp_type;
         data.correct = correct;
         data.late = (go && !pressed) ? 1 : 0;
-
         data.response_onset_ms = performance.now();
         data.response_onset_rel_ms = (t0 === null) ? null : Math.round(data.response_onset_ms - t0);
-
-        // reversal flag exactly like your script
-        let rev = 0;
-        if (blockIndex === 0 && (trialIndexInBlock + 1) > 20) rev = 1;
-        if (blockIndex === 1 && (trialIndexInBlock + 1) > 24) rev = 1;
-        data.reversal = rev;
       }
     };
 
@@ -382,112 +696,398 @@
         trial_in_block: trialIndexInBlock + 1,
         trial_type: trialType
       },
-      stimulus: function(){
-        const last = jsPsych.data.get().filter({phase:"response", task:"rule_shift"}).last(1).values()[0];
+      stimulus: function() {
+        const last = jsPsych.data.get().filter({ phase: "response", task: "rule_shift" }).last(1).values()[0];
         const win = (last.correct === 1);
         const late = (last.late === 1);
-
         const img = win ? ASSET.fb_win : ASSET.fb_lose;
-        const msg = late ? "Zu spät!" : (win ? "Du gewinnst!" : "Du verlierst!");
-        const color = (win && !late) ? "black" : "red";
+        let msgClass, msg;
+        if (late)             { msgClass = "fn-outcome-late";  msg = "Zu spät!"; }
+        else if (win)         { msgClass = "fn-outcome-win";   msg = "Richtig!"; }
+        else                  { msgClass = "fn-outcome-lose";  msg = "Falsch!"; }
 
         return `
-          <div style="text-align:center;">
-            <img src="${img}" style="max-width: 420px; height:auto; display:block; margin:0 auto;" />
-            <div style="margin-top:14px; font-size:60px; color:${color}; font-weight:600;">
-              ${msg}
-            </div>
+          <div class="fn-outcome">
+            <img class="fn-outcome-img" src="${img}" />
+            <div class="fn-outcome-text ${msgClass}">${msg}</div>
           </div>
         `;
       },
-      on_finish: function(data){
-        data.outcome_onset_ms = performance.now();
-        data.outcome_onset_rel_ms = (t0 === null) ? null : Math.round(data.outcome_onset_ms - t0);
-
-        const last = jsPsych.data.get().filter({phase:"response", task:"rule_shift"}).last(1).values()[0];
+      on_finish: function(data) {
+        const last = jsPsych.data.get().filter({ phase: "response", task: "rule_shift" }).last(1).values()[0];
         data.correct = last.correct;
         data.resp_type = last.resp_type;
         data.rt_ms = last.rt_ms;
         data.reversal = last.reversal;
+        data.outcome_onset_ms = performance.now();
+        data.outcome_onset_rel_ms = (t0 === null) ? null : Math.round(data.outcome_onset_ms - t0);
       }
     };
 
     const iti = {
       type: jsPsychHtmlKeyboardResponse,
-      stimulus: fixationHTML,
+      stimulus: `<div class="fn-fixation">+</div>`,
       choices: "NO_KEYS",
-      trial_duration: ITI_duration[trialIndexInBlock],
+      trial_duration: function() {
+        const diff = jsPsych.data.get().filter({ phase: "demographics" }).last(1).values()[0];
+        const ageGroup = jsPsych.data.get().last(1).values()[0]?.age_group || "40–60";
+        return 1000 + Math.floor(Math.random() * 801);
+      },
       data: {
         phase: "ITI",
         task: "rule_shift",
         block: blockIndex + 1,
-        trial_in_block: trialIndexInBlock + 1,
-        iti_ms: ITI_duration[trialIndexInBlock]
+        trial_in_block: trialIndexInBlock + 1
       }
     };
 
     return [cue, resp, feedback, iti];
   }
 
-  // Build rule timeline once (we will conditionally include it)
-  const timeline_rule = [];
-  timeline_rule.push(preload_rule, rule_start, setT0);
+  function buildRuleTimeline() {
+    const tl = [];
+    tl.push(preload_rule, rule_start, setT0);
 
-  for (let b = 0; b < All_trials.length; b++){
-    for (let t = 0; t < All_trials[b].length; t++){
-      timeline_rule.push(...makeOneRuleTrial(b, t, All_trials[b][t]));
+    const diff = jsPsych.data.get().last(1).values()[0]?.difficulty || "medium";
+    const blockDefs = generateTrialList(20, 20, diff);
+
+    for (let b = 0; b < blockDefs.length; b++) {
+      const allTrials = blockDefs[b];
+      const itiDurations = generateITI(allTrials.length);
+      for (let t = 0; t < allTrials.length; t++) {
+        tl.push(...makeRuleTrialHTML(b, t, allTrials[t], 20));
+      }
     }
+    return tl;
   }
 
-  // Only run Rule Shift block if selected
+  // Only run if rule_shift selected
   timeline.push({
-    timeline: timeline_rule,
-    conditional_function: function(){
-      const sel = jsPsych.data.get().filter({phase:"task_select"}).last(1).values()[0];
+    timeline: [],
+    conditional_function: function() {
+      return false; // placeholder, we override below
+    }
+  });
+
+  // ═══════════════════════════════════════════
+  // PERCEPTUAL SHIFT TASK
+  // Visual cue + Auditory outcome (oben/unten)
+  // ═══════════════════════════════════════════
+
+  // Pre-generate audio stimuli using Web Audio API
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  let audioCtx = null;
+
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new AudioCtx();
+    return audioCtx;
+  }
+
+  function speakWord(text, lang = "de-DE") {
+    return new Promise((resolve) => {
+      if ('speechSynthesis' in window) {
+        const utt = new SpeechSynthesisUtterance(text);
+        utt.lang = lang;
+        utt.rate = 0.9;
+        utt.pitch = 1.0;
+        utt.onend = resolve;
+        utt.onerror = resolve;
+        speechSynthesis.speak(utt);
+      } else {
+        resolve();
+      }
+    });
+  }
+
+  // Trial types for perceptual shift:
+  // Same as rule shift: 1=up+GO, 2=up+NOGO, 3=down+NOGO, 4=down+GO
+  // But outcome is auditory: "oben" or "unten"
+
+  const perceptual_start = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `
+      <div class="fn-container fn-instructions">
+        <h2>Perceptual Shift</h2>
+        <p>In jedem Durchgang sehen Sie ein Hinweisbild (Cue), danach ein grünes „+".</p>
+        <p><b>Achtung:</b> Die Rückmeldung erfolgt akustisch!</p>
+        <ul>
+          <li><b>Go</b>: Drücken Sie <span class="fn-key">J</span> so schnell wie möglich.</li>
+          <li><b>NoGo</b>: Drücken Sie <b>keine</b> Taste.</li>
+          <li>Sie hören „<b>oben</b>" oder „<b>unten</b>" als Rückmeldung.</li>
+        </ul>
+        <p style="margin-top:20px;">Beachten Sie: Die Regeln können sich中途 ändern!</p>
+        <p style="margin-top:20px;">Zum Start drücken Sie <span class="fn-key">T</span>.</p>
+        <p style="margin-top:10px;color:#ff9800;font-size:14px;">🔊 Bitte stellen Sie sicher, dass Ihre Lautsprecher eingeschaltet sind.</p>
+      </div>
+    `,
+    choices: START_KEYS,
+    data: { phase: "perceptual_intro" }
+  };
+
+  const preload_perceptual = {
+    type: jsPsychPreload,
+    images: [ASSET.cue_up, ASSET.cue_down]
+  };
+
+  function makePerceptualTrialHTML(blockIndex, trialIndexInBlock, trialType, totalPreReversal) {
+    const go = isGoTrial(trialType);
+    const isPostReversal = trialIndexInBlock >= totalPreReversal;
+    // In perceptual shift, "oben" = correct for up trials (1,2), "unten" = correct for down trials (3,4)
+    // Pre-reversal: cue_up -> "oben" expected, cue_down -> "unten" expected
+    // Post-reversal: swapped
+
+    const cue = {
+      type: jsPsychImageKeyboardResponse,
+      stimulus: cueImage(trialType),
+      choices: "NO_KEYS",
+      trial_duration: DUR.cue,
+      data: {
+        phase: "cue",
+        task: "perceptual_shift",
+        block: blockIndex + 1,
+        trial_in_block: trialIndexInBlock + 1,
+        trial_type: trialType,
+        go_trial: go ? 1 : 0,
+        reversal: isPostReversal ? 1 : 0
+      },
+      on_finish: function(data) {
+        data.cue_onset_ms = performance.now();
+        data.cue_onset_rel_ms = (t0 === null) ? null : Math.round(data.cue_onset_ms - t0);
+      }
+    };
+
+    const resp = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `<div class="fn-go-signal">+</div>`,
+      choices: GO_KEYS,
+      trial_duration: DUR.response,
+      response_ends_trial: false,
+      data: {
+        phase: "response",
+        task: "perceptual_shift",
+        block: blockIndex + 1,
+        trial_in_block: trialIndexInBlock + 1,
+        trial_type: trialType,
+        go_trial: go ? 1 : 0,
+        reversal: isPostReversal ? 1 : 0,
+        required_key: go ? GO_KEYS[0] : null
+      },
+      on_finish: function(data) {
+        const pressed = (data.response !== null);
+        const rt = (data.rt === null) ? -1 : Math.round(data.rt);
+        let resp_type = null;
+        let correct = null;
+        if (go && pressed)      { resp_type = "HIT";  correct = 1; }
+        if (!go && pressed)     { resp_type = "FA";   correct = 0; }
+        if (go && !pressed)     { resp_type = "MISS"; correct = 0; }
+        if (!go && !pressed)    { resp_type = "CR";   correct = 1; }
+
+        data.pressed = pressed ? 1 : 0;
+        data.rt_ms = rt;
+        data.resp_type = resp_type;
+        data.correct = correct;
+        data.late = (go && !pressed) ? 1 : 0;
+        data.response_onset_ms = performance.now();
+        data.response_onset_rel_ms = (t0 === null) ? null : Math.round(data.response_onset_ms - t0);
+      }
+    };
+
+    // Auditory feedback trial
+    const feedback = {
+      type: jsPsychHtmlKeyboardResponse,
+      choices: "NO_KEYS",
+      trial_duration: DUR.feedback,
+      data: {
+        phase: "feedback",
+        task: "perceptual_shift",
+        block: blockIndex + 1,
+        trial_in_block: trialIndexInBlock + 1,
+        trial_type: trialType
+      },
+      stimulus: function() {
+        const last = jsPsych.data.get().filter({ phase: "response", task: "perceptual_shift" }).last(1).values()[0];
+        const win = (last.correct === 1);
+        const late = (last.late === 1);
+
+        let audioWord, msgClass, msg;
+        if (late) {
+          audioWord = null;
+          msgClass = "fn-outcome-late";
+          msg = "Zu spät!";
+        } else if (win) {
+          // Play the congruent word (pre-reversal) or incongruent (post-reversal)
+          // For up cue (1,2): "oben" is expected pre-reversal
+          // For down cue (3,4): "unten" is expected pre-reversal
+          const tt = last.trial_type;
+          const rev = last.reversal;
+          if (tt === 1 || tt === 2) {
+            audioWord = rev ? "unten" : "oben";
+          } else {
+            audioWord = rev ? "oben" : "unten";
+          }
+          msgClass = "fn-outcome-win";
+          msg = "🔊 " + audioWord;
+        } else {
+          // Wrong response - play incongruent word
+          const tt = last.trial_type;
+          const rev = last.reversal;
+          if (tt === 1 || tt === 2) {
+            audioWord = rev ? "oben" : "unten";
+          } else {
+            audioWord = rev ? "unten" : "oben";
+          }
+          msgClass = "fn-outcome-lose";
+          msg = "🔊 " + audioWord;
+        }
+
+        // Speak the word
+        if (audioWord) {
+          speakWord(audioWord, "de-DE");
+        }
+
+        return `
+          <div class="fn-outcome">
+            <div style="font-size:80px;margin-bottom:16px;">🔊</div>
+            <div class="fn-outcome-text ${msgClass}">${msg}</div>
+          </div>
+        `;
+      },
+      on_finish: function(data) {
+        const last = jsPsych.data.get().filter({ phase: "response", task: "perceptual_shift" }).last(1).values()[0];
+        data.correct = last.correct;
+        data.resp_type = last.resp_type;
+        data.rt_ms = last.rt_ms;
+        data.reversal = last.reversal;
+        data.outcome_onset_ms = performance.now();
+        data.outcome_onset_rel_ms = (t0 === null) ? null : Math.round(data.outcome_onset_ms - t0);
+
+        // Determine what word was played
+        const tt = last.trial_type;
+        const rev = last.reversal;
+        if (tt === 1 || tt === 2) {
+          data.outcome_word = rev ? "unten" : "oben";
+        } else {
+          data.outcome_word = rev ? "oben" : "unten";
+        }
+      }
+    };
+
+    const iti = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `<div class="fn-fixation">+</div>`,
+      choices: "NO_KEYS",
+      trial_duration: function() {
+        return 1000 + Math.floor(Math.random() * 801);
+      },
+      data: {
+        phase: "ITI",
+        task: "perceptual_shift",
+        block: blockIndex + 1,
+        trial_in_block: trialIndexInBlock + 1
+      }
+    };
+
+    return [cue, resp, feedback, iti];
+  }
+
+  function buildPerceptualTimeline() {
+    const tl = [];
+    tl.push(preload_perceptual, perceptual_start, setT0);
+
+    const diff = jsPsych.data.get().last(1).values()[0]?.difficulty || "medium";
+    const blockDefs = generateTrialList(20, 20, diff);
+
+    for (let b = 0; b < blockDefs.length; b++) {
+      const allTrials = blockDefs[b];
+      for (let t = 0; t < allTrials.length; t++) {
+        tl.push(...makePerceptualTrialHTML(b, t, allTrials[t], 20));
+      }
+    }
+    return tl;
+  }
+
+  // ═══════════════════════════════════════════
+  // Conditional task execution
+  // ═══════════════════════════════════════════
+  // Rule Shift
+  timeline.push({
+    timeline: buildRuleTimeline(),
+    conditional_function: function() {
+      const sel = jsPsych.data.get().filter({ phase: "task_select" }).last(1).values()[0];
       return sel && sel.task_selected === "rule_shift";
     }
   });
 
-  // Perceptual Shift placeholder (for now)
-  const perceptual_placeholder = {
-    type: jsPsychHtmlButtonResponse,
-    stimulus: `
-      <div style="max-width: 900px; margin:0 auto; text-align:left;">
-        <h2>Perceptual Shift</h2>
-        <p>Dieses Modul ist noch nicht implementiert. Bitte wählen Sie aktuell „Rule Shift".</p>
-      </div>
-    `,
-    choices: ["Weiter"],
-    data: {phase: "perceptual_placeholder"}
-  };
-
+  // Perceptual Shift
   timeline.push({
-    timeline: [perceptual_placeholder],
-    conditional_function: function(){
-      const sel = jsPsych.data.get().filter({phase:"task_select"}).last(1).values()[0];
+    timeline: buildPerceptualTimeline(),
+    conditional_function: function() {
+      const sel = jsPsych.data.get().filter({ phase: "task_select" }).last(1).values()[0];
       return sel && sel.task_selected === "perceptual_shift";
     }
   });
 
-  // =========================
-  // Abschluss
-  // =========================
+  // ═══════════════════════════════════════════
+  // STEP 4: Debrief + Upload
+  // ═══════════════════════════════════════════
 
-  // ✅ 最后上传到后台
+  // Custom CSV format matching s25_results_all.txt columns
+  function buildExportCSV() {
+    const allData = jsPsych.data.get().values();
+    const taskSel = jsPsych.data.get().filter({ phase: "task_select" }).last(1).values()[0];
+    const task = taskSel?.task_selected || "unknown";
+    const diff = allData[allData.length - 1]?.difficulty || "medium";
+    const diffObj = DIFFICULTY[diff] || DIFFICULTY.medium;
+
+    // Filter only response phase trials
+    const responseTrials = allData.filter(d => d.phase === "response" && d.task);
+    const cueTrials = allData.filter(d => d.phase === "cue" && d.task);
+    const feedbackTrials = allData.filter(d => d.phase === "feedback" && d.task);
+
+    // Header: Trial_Nr, u, Reversal, Length, Categories, Trial_type, response_type, RT, Test, y, PE, cue_time, Cue_time, outcome_time, Outcome_time, Block
+    let csv = "Trial_Nr\tu\tReversal\tLength\tCategories\tTrial_type\tresponse_type\tRT\tTest\ty\tPE\tcue_time\tCue_time\toutcome_time\tOutcome_time\tBlock\tsubject_id\ttask\tdifficulty\n";
+
+    responseTrials.forEach((resp, idx) => {
+      const trialNr = idx + 1;
+      const cueData = cueTrials[idx] || {};
+      const fbData = feedbackTrials[idx] || {};
+
+      // Map resp_type to numeric: HIT=1, FA=2, MISS=3, CR=4
+      const respMap = { "HIT": 1, "FA": 2, "MISS": 3, "CR": 4 };
+      const response_type = respMap[resp.resp_type] || 0;
+      const rt = resp.rt_ms > 0 ? resp.rt_ms : 0;
+      // "Test" = 1 if correct, 2 if incorrect
+      const testVal = resp.correct === 1 ? 1 : 2;
+      // y = 1 (win/correct) or 0 (lose/incorrect)
+      const y = resp.correct === 1 ? 1 : 0;
+      // PE = prediction error placeholder (0 for now)
+      const pe = 0;
+
+      const cueTime = cueData.cue_onset_rel_ms || 0;
+      const cueTimeRel = cueTime;
+      const outcomeTime = fbData.outcome_onset_rel_ms || 0;
+      const outcomeTimeRel = outcomeTime - cueTime;
+
+      csv += `${trialNr}\t${diffObj.congruent}\t${resp.reversal || 0}\t3\t${resp.trial_type || 0}\t${response_type}\t${rt}\t${testVal}\t${y}\t${pe}\t${cueTime}\t${cueTimeRel}\t${outcomeTime}\t${outcomeTimeRel}\t${resp.block || 0}\t${subject_id}\t${task}\t${diff}\n`;
+    });
+
+    return csv;
+  }
+
   timeline.push({
     type: jsPsychHtmlButtonResponse,
     stimulus: `
-      <div style="max-width: 900px; margin:0 auto; text-align:left;">
-        <h2>Vielen Dank für Ihre Teilnahme</h2>
-        <p id="upload-status">Ihre Daten werden nun anonym gespeichert...</p>
+      <div class="fn-container" style="text-align:center;">
+        <h2 style="border-bottom:none;">Vielen Dank für Ihre Teilnahme</h2>
+        <p id="upload-status" style="margin:20px 0;">Ihre Daten werden nun anonym gespeichert...</p>
         <p><b>Ihre Kennung:</b> ${subject_id}</p>
       </div>
     `,
     choices: ["Beenden"],
-    data: {phase: "debrief"},
+    data: { phase: "debrief" },
     on_load: function() {
       const statusEl = document.getElementById("upload-status");
-      const csvStr  = jsPsych.data.get().csv();
+      const exportCSV = buildExportCSV();
       const jsonArr = jsPsych.data.get().values();
 
       const payloadObj = {
@@ -495,21 +1095,24 @@
         timestamp: Date.now(),
         ts_end_iso: new Date().toISOString(),
         study: "FlexNet",
-        task_selected: jsPsych.data.get().filter({phase:"task_select"}).last(1).values()?.[0]?.task_selected ?? null,
-        payload_csv: csvStr,
+        task_selected: jsPsych.data.get().filter({ phase: "task_select" }).last(1).values()?.[0]?.task_selected ?? null,
+        payload_csv: exportCSV,
         payload_json: jsonArr
       };
 
       sendToBackend(payloadObj)
         .then(() => {
-          statusEl.innerHTML = '<span style="color:green;">✓ Daten erfolgreich gespeichert.</span>';
+          statusEl.innerHTML = '<span style="color:#4caf50;font-size:18px;">✓ Daten erfolgreich gespeichert.</span>';
         })
         .catch(() => {
-          statusEl.innerHTML = '<span style="color:red;">✗ Upload fehlgeschlagen.</span><br><small>Bitte laden Sie diese Seite neu (F5) und versuchen Sie es erneut, oder kontaktieren Sie das Studienteam.</small>';
+          statusEl.innerHTML = '<span style="color:#ef5350;font-size:18px;">✗ Upload fehlgeschlagen.</span><br><small style="color:#888;">Bitte laden Sie diese Seite neu (F5) und versuchen Sie es erneut, oder kontaktieren Sie das Studienteam.</small>';
         });
     }
   });
 
+  // ═══════════════════════════════════════════
+  // Run
+  // ═══════════════════════════════════════════
   jsPsych.run(timeline);
 </script>
 </html>

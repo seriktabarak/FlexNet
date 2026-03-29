@@ -177,10 +177,11 @@ app.post("/api/upload", (req, res) => {
     return res.status(400).json({ error: "Missing subjectId or payload_csv" });
   }
 
-  // Save CSV
+  // Save CSV with UTF-8 BOM for Excel compatibility
   const ts = Date.now();
   const csvName = `FlexNet_${subjectId}_${ts}.csv`;
-  fs.writeFileSync(path.join(DATA_DIR, csvName), payload_csv);
+  const bom = "\uFEFF";
+  fs.writeFileSync(path.join(DATA_DIR, csvName), bom + payload_csv, "utf8");
 
   // Save JSON (full trial data for analysis)
   if (payload_json) {
