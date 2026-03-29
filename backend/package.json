@@ -1,0 +1,13 @@
+{
+  "name": "flexnet-backend",
+  "version": "1.0.0",
+  "description": "FlexNet experiment backend - collects cognitive flexibility test data",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cookie-parser": "^1.4.6"
+  }
+}
